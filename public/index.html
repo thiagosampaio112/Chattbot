@@ -47,12 +47,28 @@
                 <input type="text" id="bot-name" placeholder="Ex: Ana">
                 
                 <label>Descrição/Personalidade (Prompt):</label>
-                <textarea id="bot-personality" rows="4" placeholder="Descreva como o bot deve agir..."></textarea>
+                <textarea id="bot-personality" rows="3" placeholder="Descreva como o bot deve agir..."></textarea>
                 
-                <hr style="border: 1px solid #444; margin: 15px 0;">
+                <hr class="divider">
+
+                <h3>Visual</h3>
+                <div class="visual-settings">
+                    <div>
+                        <label>Foto de Perfil (Avatar):</label>
+                        <input type="file" id="bot-avatar-file" accept="image/*">
+                        <div id="avatar-preview" class="preview-box">Nenhuma foto</div>
+                    </div>
+                    <div>
+                        <label>Papel de Parede do Chat:</label>
+                        <input type="file" id="bot-bg-file" accept="image/*">
+                        <div id="bg-preview" class="preview-box">Nenhum fundo</div>
+                    </div>
+                </div>
+
+                <hr class="divider">
                 
                 <h3>Imagens e Contextos</h3>
-                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">Adicione fotos e crie tags (ex: <i>feliz, brava, apaixonada</i>) para a IA usar durante a conversa.</p>
+                <p class="help-text">Adicione fotos e crie tags (ex: <i>feliz, brava, apaixonada</i>) para a IA usar durante a conversa.</p>
                 
                 <div id="image-upload-section">
                     <input type="text" id="new-tag-name" placeholder="Nome da tag (ex: chorando)">
@@ -60,11 +76,9 @@
                     <button id="add-tag-btn" class="secondary-btn">Adicionar Imagem</button>
                 </div>
                 
-                <ul id="tags-list">
-                    <!-- Lista de imagens cadastradas -->
-                </ul>
+                <ul id="tags-list"></ul>
 
-                <hr style="border: 1px solid #444; margin: 15px 0;">
+                <hr class="divider">
                 
                 <div class="modal-actions">
                     <button id="delete-bot-btn" class="danger-btn">Apagar</button>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chattbot-cache-v1';
+const CACHE_NAME = 'chattbot-cache-v3';
 const urlsToCache = [
   '/',
   '/index.html',

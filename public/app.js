@@ -23,6 +23,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const chatContainer = document.getElementById('chat-container');
     const modalTitle = document.getElementById('modal-title');
 
+    // Visual Settings Elements
+    const botAvatarFile = document.getElementById('bot-avatar-file');
+    const botBgFile = document.getElementById('bot-bg-file');
+    const avatarPreview = document.getElementById('avatar-preview');
+    const bgPreview = document.getElementById('bg-preview');
+
     // Image Upload Elements
     const newTagNameInput = document.getElementById('new-tag-name');
     const newTagFileInput = document.getElementById('new-tag-file');
@@ -36,12 +42,18 @@ document.addEventListener('DOMContentLoaded', () => {
             name: 'Meu Primeiro Bot',
             personality: 'Você é super legal.',
             history: [],
-            imageMap: {} // tag -> base64
+            imageMap: {},
+            avatar: null,
+            background: null
         }
     ];
     let activeBotId = localStorage.getItem('activeBotId') || bots[0].id;
     let isCreatingNew = false;
-    let tempImageMap = {}; // para a modal antes de salvar
+    
+    // Temp state for modal
+    let tempImageMap = {}; 
+    let tempAvatar = null;
+    let tempBg = null;
 
     // --- Helpers ---
     function saveState() {
@@ -53,27 +65,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return bots.find(b => b.id === activeBotId) || bots[0];
     }
 
-    // Comprimir imagem para caber no LocalStorage
-    function resizeAndConvertImage(file, callback) {
+    function resizeAndConvertImage(file, maxWidth, callback) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
                 const canvas = document.createElement('canvas');
-                const MAX_WIDTH = 400; // Tamanho compacto para economizar limite de 5MB
                 let width = img.width;
                 let height = img.height;
 
-                if (width > MAX_WIDTH) {
-                    height *= MAX_WIDTH / width;
-                    width = MAX_WIDTH;
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
                 }
 
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                // Backgrounds can be heavily compressed (0.6) to save space, avatars slightly better (0.8)
+                const quality = maxWidth > 500 ? 0.6 : 0.8;
+                const dataUrl = canvas.toDataURL('image/jpeg', quality);
                 callback(dataUrl);
             };
             img.src = e.target.result;
@@ -110,7 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
             img.src = tempImageMap[tag];
             
             const span = document.createElement('span');
-            span.innerText = `Tag: [${tag}]`;
+            span.innerText = `[${tag}]`;
             
             const delBtn = document.createElement('button');
             delBtn.innerText = '🗑️';
@@ -126,15 +138,47 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    function updateAvatar() {
-        const bot = getActiveBot();
-        const fallback = bot.imageMap['default'] || bot.imageMap['feliz'] || Object.values(bot.imageMap)[0];
-        if (fallback) {
-            headerAvatar.innerText = '';
-            headerAvatar.style.backgroundImage = `url(${fallback})`;
+    function renderPreviews() {
+        if (tempAvatar) {
+            avatarPreview.innerText = '';
+            avatarPreview.style.backgroundImage = `url(${tempAvatar})`;
         } else {
-            headerAvatar.innerText = '🤖';
-            headerAvatar.style.backgroundImage = 'none';
+            avatarPreview.innerText = 'Nenhuma foto';
+            avatarPreview.style.backgroundImage = 'none';
+        }
+
+        if (tempBg) {
+            bgPreview.innerText = '';
+            bgPreview.style.backgroundImage = `url(${tempBg})`;
+        } else {
+            bgPreview.innerText = 'Nenhum fundo';
+            bgPreview.style.backgroundImage = 'none';
+        }
+    }
+
+    function applyVisuals() {
+        const bot = getActiveBot();
+        
+        // Avatar
+        if (bot.avatar) {
+            headerAvatar.innerText = '';
+            headerAvatar.style.backgroundImage = `url(${bot.avatar})`;
+        } else {
+            const fallback = bot.imageMap['default'] || bot.imageMap['feliz'] || Object.values(bot.imageMap)[0];
+            if (fallback) {
+                headerAvatar.innerText = '';
+                headerAvatar.style.backgroundImage = `url(${fallback})`;
+            } else {
+                headerAvatar.innerText = '🤖';
+                headerAvatar.style.backgroundImage = 'none';
+            }
+        }
+
+        // Background
+        if (bot.background) {
+            chatContainer.style.backgroundImage = `url(${bot.background})`;
+        } else {
+            chatContainer.style.backgroundImage = 'none';
         }
     }
 
@@ -145,14 +189,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (!bot.imageMap) bot.imageMap = {};
 
-        updateAvatar();
+        applyVisuals();
         
         if (bot.history.length === 0) {
             appendMessage(`Olá! Eu sou ${bot.name}.`, 'bot');
         } else {
             bot.history.forEach(msg => {
                 let imgData = null;
-                // Se a msg tinha imageTag salva
                 if (msg.imageTag && bot.imageMap[msg.imageTag]) {
                     imgData = bot.imageMap[msg.imageTag];
                 }
@@ -161,14 +204,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Modal e Uploads ---
+    // --- Modal Inputs ---
+    botAvatarFile.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            resizeAndConvertImage(e.target.files[0], 200, (base64) => {
+                tempAvatar = base64;
+                renderPreviews();
+            });
+        }
+    });
+
+    botBgFile.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            resizeAndConvertImage(e.target.files[0], 800, (base64) => {
+                tempBg = base64;
+                renderPreviews();
+            });
+        }
+    });
+
     addTagBtn.addEventListener('click', () => {
         let tag = newTagNameInput.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
         if (!tag) return alert('Digite um nome para a tag.');
         if (newTagFileInput.files.length === 0) return alert('Selecione uma imagem.');
 
-        const file = newTagFileInput.files[0];
-        resizeAndConvertImage(file, (base64) => {
+        resizeAndConvertImage(newTagFileInput.files[0], 400, (base64) => {
             tempImageMap[tag] = base64;
             newTagNameInput.value = '';
             newTagFileInput.value = '';
@@ -181,10 +241,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const bot = getActiveBot();
         botNameInput.value = bot.name;
         botPersonalityInput.value = bot.personality;
-        tempImageMap = JSON.parse(JSON.stringify(bot.imageMap || {})); // clone
+        tempImageMap = JSON.parse(JSON.stringify(bot.imageMap || {})); 
+        tempAvatar = bot.avatar || null;
+        tempBg = bot.background || null;
+        botAvatarFile.value = '';
+        botBgFile.value = '';
+        
         modalTitle.innerText = "Configurar Personagem";
         deleteBotBtn.style.display = bots.length > 1 ? 'block' : 'none';
+        
         renderTagsList();
+        renderPreviews();
         settingsModal.classList.remove('hidden');
     });
 
@@ -193,9 +260,16 @@ document.addEventListener('DOMContentLoaded', () => {
         botNameInput.value = '';
         botPersonalityInput.value = '';
         tempImageMap = {};
+        tempAvatar = null;
+        tempBg = null;
+        botAvatarFile.value = '';
+        botBgFile.value = '';
+        
         modalTitle.innerText = "Criar Novo Personagem";
         deleteBotBtn.style.display = 'none';
+        
         renderTagsList();
+        renderPreviews();
         settingsModal.classList.remove('hidden');
         sidebar.classList.add('hidden');
     });
@@ -211,7 +285,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     name,
                     personality,
                     history: [],
-                    imageMap: tempImageMap
+                    imageMap: tempImageMap,
+                    avatar: tempAvatar,
+                    background: tempBg
                 };
                 bots.push(newBot);
                 activeBotId = newBot.id;
@@ -220,10 +296,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 bot.name = name;
                 bot.personality = personality;
                 bot.imageMap = tempImageMap;
+                bot.avatar = tempAvatar;
+                bot.background = tempBg;
             }
-            saveState(); // Isso pode falhar se passar de 5MB
+            saveState(); 
         } catch (e) {
-            alert('Atenção: O armazenamento do seu navegador está cheio. Apague algumas fotos ou bots antigos.');
+            alert('Atenção: O armazenamento do seu navegador está cheio. Tente imagens menores ou apague bots antigos.');
             return;
         }
 

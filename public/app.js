@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const deleteBotBtn = document.getElementById('delete-bot-btn');
+    const clearChatBtn = document.getElementById('clear-chat-btn');
     
     const botNameInput = document.getElementById('bot-name');
     const botPersonalityInput = document.getElementById('bot-personality');
@@ -277,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         modalTitle.innerText = "Configurar Personagem";
         deleteBotBtn.style.display = bots.length > 1 ? 'block' : 'none';
+        clearChatBtn.style.display = 'block';
         
         renderTagsList();
         renderPreviews();
@@ -295,6 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         modalTitle.innerText = "Criar Novo Personagem";
         deleteBotBtn.style.display = 'none';
+        clearChatBtn.style.display = 'none';
         
         renderTagsList();
         renderPreviews();
@@ -348,6 +351,16 @@ document.addEventListener('DOMContentLoaded', () => {
             activeBotId = bots[0].id; 
             saveState();
             renderCharacterList();
+            loadChat();
+            settingsModal.classList.add('hidden');
+        }
+    });
+
+    clearChatBtn.addEventListener('click', () => {
+        if (confirm("Tem certeza que deseja apagar todo o histórico de conversa com este personagem?")) {
+            const bot = getActiveBot();
+            bot.history = [];
+            saveState();
             loadChat();
             settingsModal.classList.add('hidden');
         }

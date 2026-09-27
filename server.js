@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require('@google/generative-ai');
 require('dotenv').config();
 
 const app = express();
@@ -45,20 +45,51 @@ Regras:
 
         const model = genAI.getGenerativeModel({ 
             model: "gemini-2.5-flash",
-            systemInstruction: systemInstruction 
+            systemInstruction: systemInstruction,
+            safetySettings: [
+                {
+                    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+                {
+                    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold: HarmBlockThreshold.BLOCK_NONE,
+                },
+            ]
         });
 
-        const formattedMessages = messages.map(msg => ({
-            role: msg.sender === 'user' ? 'user' : 'model',
-            parts: [{ text: msg.text }]
-        }));
+        // Formata e garante alternância
+        const formattedMessages = [];
+        let lastRole = null;
+        for (const msg of messages) {
+            const role = msg.sender === 'user' ? 'user' : 'model';
+            const text = msg.text || '...';
+            
+            if (role === lastRole) {
+                // Junta mensagens consecutivas do mesmo remetente para evitar erro na API
+                formattedMessages[formattedMessages.length - 1].parts[0].text += '\n\n' + text;
+            } else {
+                formattedMessages.push({ role, parts: [{ text }] });
+                lastRole = role;
+            }
+        }
 
-        const chat = model.startChat({
-            history: formattedMessages.slice(0, -1)
+        // Gemini requer que o usuário seja o último
+        if (formattedMessages.length > 0 && formattedMessages[formattedMessages.length - 1].role !== 'user') {
+            formattedMessages.push({ role: 'user', parts: [{ text: 'continue' }] });
+        }
+
+        const response = await model.generateContent({
+            contents: formattedMessages
         });
-
-        const lastMessage = formattedMessages[formattedMessages.length - 1];
-        const response = await chat.sendMessage(lastMessage.parts[0].text);
 
         let responseText = response.response.text();
         let imageTag = null;

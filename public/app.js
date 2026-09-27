@@ -56,9 +56,37 @@ document.addEventListener('DOMContentLoaded', () => {
     let tempBg = null;
 
     // --- Helpers ---
-    function saveState() {
+    async function saveState() {
         localStorage.setItem('bots', JSON.stringify(bots));
         localStorage.setItem('activeBotId', activeBotId);
+
+        // Sync com a nuvem (silencioso no background)
+        try {
+            await fetch('/api/state', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ state: { bots, activeBotId } })
+            });
+        } catch(e) {
+            console.log("Aguardando configuração da nuvem...");
+        }
+    }
+
+    async function loadCloudState() {
+        try {
+            const res = await fetch('/api/state');
+            const data = await res.json();
+            if (data.state) {
+                bots = data.state.bots || bots;
+                activeBotId = data.state.activeBotId || activeBotId;
+                localStorage.setItem('bots', JSON.stringify(bots));
+                localStorage.setItem('activeBotId', activeBotId);
+                renderCharacterList();
+                loadChat();
+            }
+        } catch(e) {
+            // Nuvem ainda não configurada
+        }
     }
 
     function getActiveBot() {
@@ -415,4 +443,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderCharacterList();
     loadChat();
+    loadCloudState(); // Carrega da nuvem logo após carregar o local
 });

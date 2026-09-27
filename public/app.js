@@ -19,22 +19,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const botNameInput = document.getElementById('bot-name');
     const botPersonalityInput = document.getElementById('bot-personality');
     const botNameDisplay = document.getElementById('bot-name-display');
+    const headerAvatar = document.getElementById('header-avatar');
     const chatContainer = document.getElementById('chat-container');
     const modalTitle = document.getElementById('modal-title');
+
+    // Image Upload Elements
+    const newTagNameInput = document.getElementById('new-tag-name');
+    const newTagFileInput = document.getElementById('new-tag-file');
+    const addTagBtn = document.getElementById('add-tag-btn');
+    const tagsList = document.getElementById('tags-list');
 
     // Data State
     let bots = JSON.parse(localStorage.getItem('bots')) || [
         {
             id: 'bot_1',
-            name: 'Ana',
-            personality: 'Você é a Ana, uma assistente divertida e prestativa. Gosta de responder de forma natural e amigável.',
-            history: []
+            name: 'Meu Primeiro Bot',
+            personality: 'Você é super legal.',
+            history: [],
+            imageMap: {} // tag -> base64
         }
     ];
     let activeBotId = localStorage.getItem('activeBotId') || bots[0].id;
     let isCreatingNew = false;
+    let tempImageMap = {}; // para a modal antes de salvar
 
-    // Load Initial State
+    // --- Helpers ---
     function saveState() {
         localStorage.setItem('bots', JSON.stringify(bots));
         localStorage.setItem('activeBotId', activeBotId);
@@ -44,6 +53,35 @@ document.addEventListener('DOMContentLoaded', () => {
         return bots.find(b => b.id === activeBotId) || bots[0];
     }
 
+    // Comprimir imagem para caber no LocalStorage
+    function resizeAndConvertImage(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                const MAX_WIDTH = 400; // Tamanho compacto para economizar limite de 5MB
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_WIDTH) {
+                    height *= MAX_WIDTH / width;
+                    width = MAX_WIDTH;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+                callback(dataUrl);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // --- Renderização ---
     function renderCharacterList() {
         characterList.innerHTML = '';
         bots.forEach(bot => {
@@ -62,32 +100,91 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function renderTagsList() {
+        tagsList.innerHTML = '';
+        Object.keys(tempImageMap).forEach(tag => {
+            const li = document.createElement('li');
+            li.classList.add('tag-item');
+            
+            const img = document.createElement('img');
+            img.src = tempImageMap[tag];
+            
+            const span = document.createElement('span');
+            span.innerText = `Tag: [${tag}]`;
+            
+            const delBtn = document.createElement('button');
+            delBtn.innerText = '🗑️';
+            delBtn.onclick = () => {
+                delete tempImageMap[tag];
+                renderTagsList();
+            };
+
+            li.appendChild(img);
+            li.appendChild(span);
+            li.appendChild(delBtn);
+            tagsList.appendChild(li);
+        });
+    }
+
+    function updateAvatar() {
+        const bot = getActiveBot();
+        const fallback = bot.imageMap['default'] || bot.imageMap['feliz'] || Object.values(bot.imageMap)[0];
+        if (fallback) {
+            headerAvatar.innerText = '';
+            headerAvatar.style.backgroundImage = `url(${fallback})`;
+        } else {
+            headerAvatar.innerText = '🤖';
+            headerAvatar.style.backgroundImage = 'none';
+        }
+    }
+
     function loadChat() {
         messagesContainer.innerHTML = '';
         const bot = getActiveBot();
         botNameDisplay.innerText = bot.name;
         
+        if (!bot.imageMap) bot.imageMap = {};
+
+        updateAvatar();
+        
         if (bot.history.length === 0) {
             appendMessage(`Olá! Eu sou ${bot.name}.`, 'bot');
         } else {
             bot.history.forEach(msg => {
-                appendMessage(msg.text, msg.sender, msg.imageUrl, false);
+                let imgData = null;
+                // Se a msg tinha imageTag salva
+                if (msg.imageTag && bot.imageMap[msg.imageTag]) {
+                    imgData = bot.imageMap[msg.imageTag];
+                }
+                appendMessage(msg.text, msg.sender, imgData, false, msg.imageTag);
             });
         }
     }
 
-    // Sidebar Toggle
-    menuBtn.addEventListener('click', () => sidebar.classList.remove('hidden'));
-    closeSidebarBtn.addEventListener('click', () => sidebar.classList.add('hidden'));
+    // --- Modal e Uploads ---
+    addTagBtn.addEventListener('click', () => {
+        let tag = newTagNameInput.value.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+        if (!tag) return alert('Digite um nome para a tag.');
+        if (newTagFileInput.files.length === 0) return alert('Selecione uma imagem.');
 
-    // Modal Handlers
+        const file = newTagFileInput.files[0];
+        resizeAndConvertImage(file, (base64) => {
+            tempImageMap[tag] = base64;
+            newTagNameInput.value = '';
+            newTagFileInput.value = '';
+            renderTagsList();
+        });
+    });
+
     settingsBtn.addEventListener('click', () => {
         isCreatingNew = false;
         const bot = getActiveBot();
         botNameInput.value = bot.name;
         botPersonalityInput.value = bot.personality;
+        tempImageMap = JSON.parse(JSON.stringify(bot.imageMap || {})); // clone
         modalTitle.innerText = "Configurar Personagem";
-        deleteBotBtn.style.display = bots.length > 1 ? 'block' : 'none'; // Only allow delete if more than 1
+        deleteBotBtn.style.display = bots.length > 1 ? 'block' : 'none';
+        renderTagsList();
         settingsModal.classList.remove('hidden');
     });
 
@@ -95,45 +192,54 @@ document.addEventListener('DOMContentLoaded', () => {
         isCreatingNew = true;
         botNameInput.value = '';
         botPersonalityInput.value = '';
+        tempImageMap = {};
         modalTitle.innerText = "Criar Novo Personagem";
         deleteBotBtn.style.display = 'none';
+        renderTagsList();
         settingsModal.classList.remove('hidden');
         sidebar.classList.add('hidden');
-    });
-
-    closeSettingsBtn.addEventListener('click', () => {
-        settingsModal.classList.add('hidden');
     });
 
     saveSettingsBtn.addEventListener('click', () => {
         const name = botNameInput.value.trim() || 'Sem Nome';
         const personality = botPersonalityInput.value.trim() || 'Você é um bot.';
 
-        if (isCreatingNew) {
-            const newBot = {
-                id: 'bot_' + Date.now(),
-                name,
-                personality,
-                history: []
-            };
-            bots.push(newBot);
-            activeBotId = newBot.id;
-        } else {
-            const bot = getActiveBot();
-            bot.name = name;
-            bot.personality = personality;
+        try {
+            if (isCreatingNew) {
+                const newBot = {
+                    id: 'bot_' + Date.now(),
+                    name,
+                    personality,
+                    history: [],
+                    imageMap: tempImageMap
+                };
+                bots.push(newBot);
+                activeBotId = newBot.id;
+            } else {
+                const bot = getActiveBot();
+                bot.name = name;
+                bot.personality = personality;
+                bot.imageMap = tempImageMap;
+            }
+            saveState(); // Isso pode falhar se passar de 5MB
+        } catch (e) {
+            alert('Atenção: O armazenamento do seu navegador está cheio. Apague algumas fotos ou bots antigos.');
+            return;
         }
 
-        saveState();
         renderCharacterList();
         loadChat();
         settingsModal.classList.add('hidden');
     });
 
+    closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+    menuBtn.addEventListener('click', () => sidebar.classList.remove('hidden'));
+    closeSidebarBtn.addEventListener('click', () => sidebar.classList.add('hidden'));
+
     deleteBotBtn.addEventListener('click', () => {
         if (confirm("Tem certeza que deseja apagar este personagem?")) {
             bots = bots.filter(b => b.id !== activeBotId);
-            activeBotId = bots[0].id; // fallback to first bot
+            activeBotId = bots[0].id; 
             saveState();
             renderCharacterList();
             loadChat();
@@ -141,8 +247,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // Chat Functions
-    const appendMessage = (text, sender, imageUrl = null, save = true) => {
+    // --- Chat Logic ---
+    const appendMessage = (text, sender, imageUrl = null, save = true, imageTag = null) => {
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', sender);
         
@@ -153,7 +259,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (imageUrl) {
             const img = document.createElement('img');
             img.src = imageUrl;
-            img.onerror = () => { img.style.display = 'none'; };
             msgDiv.appendChild(img);
         }
 
@@ -162,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (save) {
             const bot = getActiveBot();
-            bot.history.push({ sender, text, imageUrl });
+            bot.history.push({ sender, text, imageTag });
             saveState();
         }
     };
@@ -178,9 +283,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const removeTypingIndicator = () => {
         const indicator = document.getElementById('typing-indicator');
-        if (indicator) {
-            indicator.remove();
-        }
+        if (indicator) indicator.remove();
     };
 
     const sendMessage = async () => {
@@ -194,17 +297,16 @@ document.addEventListener('DOMContentLoaded', () => {
         appendTypingIndicator();
 
         const bot = getActiveBot();
+        const availableTags = Object.keys(bot.imageMap || {});
 
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    // Send only history, exclude imageUrl to save token space if needed
                     messages: bot.history.map(h => ({ sender: h.sender, text: h.text })),
-                    personality: bot.personality
+                    personality: bot.personality,
+                    availableTags: availableTags
                 })
             });
 
@@ -214,7 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.error) {
                 appendMessage("Ocorreu um erro no servidor.", 'bot');
             } else {
-                appendMessage(data.text, 'bot', data.image);
+                let imgData = null;
+                if (data.imageTag && bot.imageMap[data.imageTag]) {
+                    imgData = bot.imageMap[data.imageTag];
+                }
+                appendMessage(data.text, 'bot', imgData, true, data.imageTag);
             }
 
         } catch (err) {
@@ -226,12 +332,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     sendBtn.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            sendMessage();
-        }
+        if (e.key === 'Enter') sendMessage();
     });
 
-    // Init
     renderCharacterList();
     loadChat();
 });

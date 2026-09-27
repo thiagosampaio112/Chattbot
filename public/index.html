@@ -9,31 +9,27 @@
 </head>
 <body>
     <div id="app">
-        <!-- Sidebar para seleção de personagens -->
+        <!-- Sidebar -->
         <div id="sidebar" class="sidebar hidden">
             <div class="sidebar-header">
                 <h2>Meus Bots</h2>
                 <button id="close-sidebar-btn">❌</button>
             </div>
-            <ul id="character-list">
-                <!-- Lista de bots entrará aqui -->
-            </ul>
+            <ul id="character-list"></ul>
             <button id="new-character-btn" class="primary-btn">+ Novo Bot</button>
         </div>
 
         <!-- Header -->
         <header>
             <button id="menu-btn" title="Lista de Personagens">☰</button>
-            <div class="avatar" id="header-avatar">🤖</div>
+            <div class="avatar" id="header-avatar" style="background-size: cover; background-position: center;">🤖</div>
             <h1 id="bot-name-display">Meu Bot</h1>
             <button id="settings-btn" title="Configurar Personagem Atual">⚙️</button>
         </header>
 
         <!-- Chat Area -->
         <main id="chat-container">
-            <div class="messages" id="messages">
-                <!-- Mensagens entrarão aqui -->
-            </div>
+            <div class="messages" id="messages"></div>
         </main>
 
         <!-- Input Area -->
@@ -42,15 +38,33 @@
             <button id="send-btn">Enviar</button>
         </footer>
 
-        <!-- Settings Modal (Criar/Editar Personagem) -->
+        <!-- Settings Modal -->
         <div id="settings-modal" class="modal hidden">
-            <div class="modal-content">
+            <div class="modal-content settings-scroll">
                 <h2 id="modal-title">Configurar Personagem</h2>
+                
                 <label>Nome do Bot:</label>
                 <input type="text" id="bot-name" placeholder="Ex: Ana">
                 
                 <label>Descrição/Personalidade (Prompt):</label>
-                <textarea id="bot-personality" rows="5" placeholder="Descreva como o bot deve agir..."></textarea>
+                <textarea id="bot-personality" rows="4" placeholder="Descreva como o bot deve agir..."></textarea>
+                
+                <hr style="border: 1px solid #444; margin: 15px 0;">
+                
+                <h3>Imagens e Contextos</h3>
+                <p style="font-size: 0.8rem; color: #aaa; margin-bottom: 10px;">Adicione fotos e crie tags (ex: <i>feliz, brava, apaixonada</i>) para a IA usar durante a conversa.</p>
+                
+                <div id="image-upload-section">
+                    <input type="text" id="new-tag-name" placeholder="Nome da tag (ex: chorando)">
+                    <input type="file" id="new-tag-file" accept="image/*">
+                    <button id="add-tag-btn" class="secondary-btn">Adicionar Imagem</button>
+                </div>
+                
+                <ul id="tags-list">
+                    <!-- Lista de imagens cadastradas -->
+                </ul>
+
+                <hr style="border: 1px solid #444; margin: 15px 0;">
                 
                 <div class="modal-actions">
                     <button id="delete-bot-btn" class="danger-btn">Apagar</button>
@@ -62,14 +76,5 @@
     </div>
 
     <script src="/app.js"></script>
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/sw.js').then(() => {
-                console.log('Service Worker Registrado');
-            }).catch((error) => {
-                console.log('Service Worker não registrado:', error);
-            });
-        }
-    </script>
 </body>
 </html>

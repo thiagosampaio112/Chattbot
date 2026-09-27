@@ -74,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function loadCloudState() {
         try {
-            const res = await fetch('/api/state');
+            const res = await fetch('/api/state', { cache: 'no-store' });
             const data = await res.json();
             if (data.state) {
                 bots = data.state.bots || bots;
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
         applyVisuals();
         
         if (bot.history.length === 0) {
-            appendMessage(`Olá! Eu sou ${bot.name}.`, 'bot');
+            appendMessage(`Olá! Eu sou ${bot.name}.`, 'bot', null, false);
         } else {
             bot.history.forEach(msg => {
                 let imgData = null;

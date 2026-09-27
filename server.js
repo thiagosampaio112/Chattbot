@@ -113,6 +113,10 @@ Regras:
 const { kv } = require('@vercel/kv');
 
 app.get('/api/state', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    
     if (!process.env.KV_REST_API_URL) {
         return res.status(400).json({ error: "Banco de dados não configurado" });
     }

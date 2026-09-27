@@ -1,0 +1,20 @@
+COMO ADICIONAR IMAGENS AO BOT:
+
+1. Coloque os arquivos de imagem (ex: .jpg, .png, .gif) nesta pasta `images`.
+2. Para que o bot envie essas imagens durante a conversa, o nome do arquivo deve corresponder ao que está configurado no arquivo `server.js`.
+
+Por padrão, o servidor está configurado para tentar carregar as seguintes imagens com base no contexto da conversa:
+- happy.jpg    (Para reações felizes)
+- flirty.jpg   (Para reações de flerte/românticas)
+- angry.jpg    (Para reações de raiva)
+- nsfw.jpg     (Para conteúdo adulto/explícito, se desejar)
+- default.jpg  (Para situações genéricas)
+
+Para alterar as categorias ou os nomes dos arquivos, basta editar o objeto `imageDatabase` dentro do arquivo `server.js` na pasta principal do projeto.
+
+Exemplo de modificação no server.js:
+const imageDatabase = {
+    "feliz": "/images/minha_foto_feliz.png",
+    "brava": "/images/foto_brava.jpg"
+};
+E lembre-se de atualizar o Prompt do bot para que ele saiba as tags corretas a usar.

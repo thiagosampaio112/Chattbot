@@ -110,39 +110,29 @@ Regras:
 });
 
 // Rotas de Banco de Dados em Nuvem (Vercel KV)
+const { kv } = require('@vercel/kv');
+
 app.get('/api/state', async (req, res) => {
-    const kvUrl = process.env.KV_REST_API_URL;
-    const kvToken = process.env.KV_REST_API_TOKEN;
-    if (!kvUrl || !kvToken) {
+    if (!process.env.KV_REST_API_URL) {
         return res.status(400).json({ error: "Banco de dados não configurado" });
     }
     try {
-        const response = await fetch(`${kvUrl}/get/chattbot_state`, {
-            headers: { Authorization: `Bearer ${kvToken}` }
-        });
-        const data = await response.json();
-        const state = data.result ? JSON.parse(data.result) : null;
+        const state = await kv.get('chattbot_state');
         res.json({ state });
     } catch(e) {
-        res.status(500).json({ error: "Erro ao ler banco de dados" });
+        res.status(500).json({ error: "Erro ao ler banco de dados", details: e.message });
     }
 });
 
 app.post('/api/state', async (req, res) => {
-    const kvUrl = process.env.KV_REST_API_URL;
-    const kvToken = process.env.KV_REST_API_TOKEN;
-    if (!kvUrl || !kvToken) {
+    if (!process.env.KV_REST_API_URL) {
         return res.status(400).json({ error: "Banco de dados não configurado" });
     }
     try {
-        await fetch(`${kvUrl}/set/chattbot_state`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${kvToken}` },
-            body: JSON.stringify(JSON.stringify(req.body.state))
-        });
+        await kv.set('chattbot_state', req.body.state);
         res.json({ success: true });
     } catch(e) {
-        res.status(500).json({ error: "Erro ao salvar banco de dados" });
+        res.status(500).json({ error: "Erro ao salvar banco de dados", details: e.message });
     }
 });
 

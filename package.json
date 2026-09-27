@@ -10,6 +10,7 @@
     "@google/generative-ai": "^0.24.1",
     "cors": "^2.8.6",
     "dotenv": "^16.6.1",
-    "express": "^4.22.3"
+    "express": "^4.22.3",
+    "@vercel/kv": "^3.0.0"
   }
 }

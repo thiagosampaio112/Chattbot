@@ -39,8 +39,8 @@ ${personality}
 Regras:
 1. Permaneça estritamente no personagem o tempo todo.
 2. Seja natural, envolvente e reativo ao usuário.
-3. Se a emoção ou o contexto mudar, você DEVE solicitar a exibição de uma imagem baseada na lista disponível.
-4. Para solicitar a imagem, inclua EXATAMENTE esta tag no final da sua resposta: [IMAGE: contexto].
+3. Você DEVE SEMPRE, OBRIGATORIAMENTE, incluir a tag de uma imagem no final de TODAS as suas respostas. Nunca envie uma mensagem de texto sem uma tag de imagem.
+4. Escolha a imagem da lista que melhor representa a sua emoção ou ação atual e inclua EXATAMENTE no formato: [IMAGE: contexto].
 5. IMPORTANTE: Os únicos contextos de imagem que existem para você usar são: ${tagsList}. NUNCA invente um contexto que não esteja nessa lista.`;
 
         const model = genAI.getGenerativeModel({ 

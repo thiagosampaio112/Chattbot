@@ -66,10 +66,14 @@ Regras:
             ]
         });
 
+        // Limita o histórico para não gastar muitos tokens de input e otimizar custos
+        // 100 mensagens = ~50 trocas (muito mais que suficiente para manter coerência no roleplay)
+        const recentMessages = messages.slice(-100);
+
         // Formata e garante alternância
         const formattedMessages = [];
         let lastRole = null;
-        for (const msg of messages) {
+        for (const msg of recentMessages) {
             const role = msg.sender === 'user' ? 'user' : 'model';
             const text = msg.text || '...';
             

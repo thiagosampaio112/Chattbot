@@ -1,7 +1,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-body, html { height: 100%; background-color: #0d0d0d; color: #ffffff; }
+body, html { height: 100%; background-color: #0d0d0d; color: #ffffff; overflow: hidden; }
 
-#app { display: flex; flex-direction: column; height: 100vh; max-width: 600px; margin: 0 auto; background-color: #1a1a1a; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.5); overflow: hidden; }
+#app { display: flex; flex-direction: column; height: 100dvh; max-width: 600px; margin: 0 auto; background-color: #1a1a1a; position: relative; box-shadow: 0 0 10px rgba(0,0,0,0.5); overflow: hidden; }
 
 /* Sidebar */
 .sidebar { position: absolute; top: 0; left: 0; width: 250px; height: 100%; background-color: #242424; z-index: 20; display: flex; flex-direction: column; transition: transform 0.3s ease; border-right: 1px solid #333; }
@@ -14,7 +14,7 @@ body, html { height: 100%; background-color: #0d0d0d; color: #ffffff; }
 #character-list li:hover:not(.active) { background-color: #444; }
 
 /* Header */
-header { display: flex; align-items: center; padding: 15px; background-color: #242424; border-bottom: 1px solid #333; z-index: 5; }
+header { display: flex; align-items: center; padding: 15px; background-color: #242424; border-bottom: 1px solid #333; z-index: 5; flex-shrink: 0; }
 #menu-btn { background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; margin-right: 15px; }
 .avatar { width: 40px; height: 40px; border-radius: 50%; background-color: #ff2a6d; margin-right: 15px; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; overflow: hidden; border: 2px solid #fff; }
 header h1 { font-size: 1.2rem; flex-grow: 1; }
@@ -49,7 +49,7 @@ header h1 { font-size: 1.2rem; flex-grow: 1; }
 .message img { max-width: 100%; border-radius: 12px; margin-top: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
 
 /* Footer */
-footer { display: flex; padding: 15px; background-color: #242424; border-top: 1px solid #333; z-index: 5; }
+footer { display: flex; padding: 15px; background-color: #242424; border-top: 1px solid #333; z-index: 5; flex-shrink: 0; }
 #message-input { flex-grow: 1; padding: 12px 15px; border: none; border-radius: 25px; background-color: #333; color: white; outline: none; font-size: 1rem; }
 #send-btn { background-color: #ff2a6d; color: white; border: none; border-radius: 25px; padding: 10px 20px; margin-left: 10px; cursor: pointer; font-weight: bold; font-size: 1rem; }
 

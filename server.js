@@ -91,6 +91,13 @@ Regras:
             formattedMessages.push({ role: 'user', parts: [{ text: 'continue' }] });
         }
 
+        // Injeção de Prompt (Lembrete Forte): Colocar a regra no final do último turno do usuário
+        // garante que a IA não "esqueça" a formatação por estar focada demais na narrativa.
+        if (formattedMessages.length > 0) {
+            const lastMsg = formattedMessages[formattedMessages.length - 1];
+            lastMsg.parts[0].text += '\n\n[LEMBRETE DO SISTEMA: Lembre-se da regra OBRIGATÓRIA. Termine esta sua resposta com a tag [IMAGE: contexto] escolhendo a imagem mais adequada da lista.]';
+        }
+
         const response = await model.generateContent({
             contents: formattedMessages
         });

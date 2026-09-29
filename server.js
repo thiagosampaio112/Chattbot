@@ -19,7 +19,7 @@ if (apiKey) {
 
 app.post('/api/chat', async (req, res) => {
     try {
-        const { messages, personality, availableTags } = req.body;
+        const { messages, personality, scenario, availableTags } = req.body;
         
         if (!genAI) {
             return res.json({ 
@@ -32,9 +32,15 @@ app.post('/api/chat', async (req, res) => {
             ? availableTags.join(', ') 
             : 'nenhuma imagem disponível';
 
+        let scenarioPrompt = '';
+        if (scenario && scenario.trim() !== '') {
+            scenarioPrompt = `\nAlém do seu personagem principal, você também tem autoridade e DEVE narrar e interpretar as falas e ações dos seguintes personagens secundários quando eles estiverem na cena:\n[MUNDO/SECUNDÁRIOS: ${scenario}]\nQuando um personagem secundário falar, escreva o nome dele antes da fala (Ex: **Ana:** "Oii!"). Ocasionalmente faça eles interagirem naturalmente.`;
+        }
+
         const systemInstruction = `Você é um chatbot de roleplay interativo.
 Sua personalidade é descrita a seguir:
 ${personality}
+${scenarioPrompt}
 
 Regras:
 1. Permaneça estritamente no personagem o tempo todo.

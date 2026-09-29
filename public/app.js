@@ -16,9 +16,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const deleteBotBtn = document.getElementById('delete-bot-btn');
     const clearChatBtn = document.getElementById('clear-chat-btn');
-    
     const botNameInput = document.getElementById('bot-name');
     const botPersonalityInput = document.getElementById('bot-personality');
+    const botScenarioInput = document.getElementById('bot-scenario');
     const botNameDisplay = document.getElementById('bot-name-display');
     const headerAvatar = document.getElementById('header-avatar');
     const chatContainer = document.getElementById('chat-container');
@@ -276,6 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const bot = getActiveBot();
         botNameInput.value = bot.name;
         botPersonalityInput.value = bot.personality;
+        botScenarioInput.value = bot.scenario || '';
         tempImageMap = JSON.parse(JSON.stringify(bot.imageMap || {})); 
         tempAvatar = bot.avatar || null;
         tempBg = bot.background || null;
@@ -295,6 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isCreatingNew = true;
         botNameInput.value = '';
         botPersonalityInput.value = '';
+        botScenarioInput.value = '';
         tempImageMap = {};
         tempAvatar = null;
         tempBg = null;
@@ -314,6 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     saveSettingsBtn.addEventListener('click', () => {
         const name = botNameInput.value.trim() || 'Sem Nome';
         const personality = botPersonalityInput.value.trim() || 'Você é um bot.';
+        const scenario = botScenarioInput.value.trim() || '';
 
         try {
             if (isCreatingNew) {
@@ -321,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     id: 'bot_' + Date.now(),
                     name,
                     personality,
+                    scenario,
                     history: [],
                     imageMap: tempImageMap,
                     avatar: tempAvatar,
@@ -332,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bot = getActiveBot();
                 bot.name = name;
                 bot.personality = personality;
+                bot.scenario = scenario;
                 bot.imageMap = tempImageMap;
                 bot.avatar = tempAvatar;
                 bot.background = tempBg;
@@ -431,6 +436,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 body: JSON.stringify({
                     messages: bot.history.map(h => ({ sender: h.sender, text: h.text })),
                     personality: bot.personality,
+                    scenario: bot.scenario || '',
                     availableTags: availableTags
                 })
             });

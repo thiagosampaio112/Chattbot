@@ -98,10 +98,10 @@ Regras:
         let responseText = response.response.text();
         let imageTag = null;
 
-        const imageRegex = /\[IMAGE:\s*([a-zA-Z0-9_-]+)\]/gi;
+        const imageRegex = /\[IMAGE?M?:\s*([^\]]+)\]/gi;
         const match = imageRegex.exec(responseText);
         if (match) {
-            imageTag = match[1].toLowerCase();
+            imageTag = match[1].trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
             responseText = responseText.replace(imageRegex, '').trim();
         }
 

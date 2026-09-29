@@ -223,10 +223,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bot.history.length === 0) {
             appendMessage(`Olá! Eu sou ${bot.name}.`, 'bot', null, false);
         } else {
+            let lastKnownTag = null;
             bot.history.forEach(msg => {
+                if (msg.sender === 'bot' && msg.imageTag) {
+                    lastKnownTag = msg.imageTag;
+                }
+                let activeTag = msg.imageTag || (msg.sender === 'bot' ? lastKnownTag : null);
+                
                 let imgData = null;
-                if (msg.imageTag && bot.imageMap[msg.imageTag]) {
-                    imgData = bot.imageMap[msg.imageTag];
+                if (activeTag && bot.imageMap[activeTag]) {
+                    imgData = bot.imageMap[activeTag];
                 }
                 appendMessage(msg.text, msg.sender, imgData, false, msg.imageTag);
             });
@@ -435,9 +441,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.error) {
                 appendMessage("Ocorreu um erro no servidor.", 'bot');
             } else {
+                if (data.imageTag) {
+                    bot.lastImageTag = data.imageTag;
+                }
+                let activeTag = data.imageTag || bot.lastImageTag;
                 let imgData = null;
-                if (data.imageTag && bot.imageMap[data.imageTag]) {
-                    imgData = bot.imageMap[data.imageTag];
+                if (activeTag && bot.imageMap[activeTag]) {
+                    imgData = bot.imageMap[activeTag];
                 }
                 appendMessage(data.text, 'bot', imgData, true, data.imageTag);
             }

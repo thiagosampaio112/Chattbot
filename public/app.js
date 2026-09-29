@@ -434,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: bot.history.map(h => ({ sender: h.sender, text: h.text })),
+                    messages: bot.history.slice(-100).map(h => ({ sender: h.sender, text: h.text })),
                     personality: bot.personality,
                     scenario: bot.scenario || '',
                     availableTags: availableTags

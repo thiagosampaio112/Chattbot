@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let tempImageMap = {}; 
     let tempAvatar = null;
     let tempBg = null;
+    let tagRenames = {};
 
     // --- Helpers ---
     async function saveState() {
@@ -153,6 +154,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const span = document.createElement('span');
             span.innerText = `[${tag}]`;
             
+            const btnGroup = document.createElement('div');
+            
+            const editBtn = document.createElement('button');
+            editBtn.innerText = '✏️';
+            editBtn.onclick = () => {
+                const newTagRaw = prompt('Digite o novo nome para esta tag:', tag);
+                if (newTagRaw !== null) {
+                    const newTag = newTagRaw.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
+                    if (newTag && newTag !== tag) {
+                        tempImageMap[newTag] = tempImageMap[tag];
+                        delete tempImageMap[tag];
+                        tagRenames[tag] = newTag;
+                        renderTagsList();
+                    }
+                }
+            };
+            
             const delBtn = document.createElement('button');
             delBtn.innerText = '🗑️';
             delBtn.onclick = () => {
@@ -160,9 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderTagsList();
             };
 
+            btnGroup.appendChild(editBtn);
+            btnGroup.appendChild(delBtn);
+
             li.appendChild(img);
             li.appendChild(span);
-            li.appendChild(delBtn);
+            li.appendChild(btnGroup);
             tagsList.appendChild(li);
         });
     }
@@ -278,6 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
         botPersonalityInput.value = bot.personality;
         botScenarioInput.value = bot.scenario || '';
         tempImageMap = JSON.parse(JSON.stringify(bot.imageMap || {})); 
+        tagRenames = {};
         tempAvatar = bot.avatar || null;
         tempBg = bot.background || null;
         botAvatarFile.value = '';
@@ -340,6 +362,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 bot.imageMap = tempImageMap;
                 bot.avatar = tempAvatar;
                 bot.background = tempBg;
+                
+                // Update history with renamed tags
+                Object.keys(tagRenames).forEach(oldTag => {
+                    bot.history.forEach(msg => {
+                        if (msg.imageTag === oldTag) {
+                            msg.imageTag = tagRenames[oldTag];
+                        }
+                    });
+                });
             }
             saveState(); 
         } catch (e) {

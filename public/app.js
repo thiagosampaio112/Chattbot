@@ -476,7 +476,14 @@ document.addEventListener('DOMContentLoaded', () => {
             removeTypingIndicator();
 
             if (data.error) {
-                appendMessage("Ocorreu um erro: " + data.error, 'bot');
+                // Reverte a mensagem do usuário que causou o erro (para não travar o histórico)
+                const bot = getActiveBot();
+                bot.history.pop();
+                saveState();
+                
+                // Recarrega a tela para apagar o balão do usuário e mostra o erro
+                loadChat();
+                appendMessage("⚠️ Mensagem bloqueada e revertida! Motivo: " + data.error, 'bot', null, false);
             } else {
                 if (data.imageTag) {
                     bot.lastImageTag = data.imageTag;

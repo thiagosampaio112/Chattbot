@@ -121,8 +121,8 @@ Regras:
         res.json({ text: responseText, imageTag: imageTag });
 
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Erro ao processar a mensagem no servidor." });
+        console.error("Erro detalhado do servidor:", error);
+        res.status(500).json({ error: "Erro no servidor da IA: " + (error.message || "Falha desconhecida") });
     }
 });
 

@@ -476,7 +476,7 @@ document.addEventListener('DOMContentLoaded', () => {
             removeTypingIndicator();
 
             if (data.error) {
-                appendMessage("Ocorreu um erro no servidor.", 'bot');
+                appendMessage("Ocorreu um erro: " + data.error, 'bot');
             } else {
                 if (data.imageTag) {
                     bot.lastImageTag = data.imageTag;

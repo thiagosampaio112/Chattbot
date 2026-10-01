@@ -61,9 +61,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Helpers ---
     async function saveState() {
         const timestamp = Date.now();
-        localStorage.setItem('bots', JSON.stringify(bots));
-        localStorage.setItem('activeBotId', activeBotId);
-        localStorage.setItem('lastUpdated', timestamp.toString());
+        try {
+            localStorage.setItem('bots', JSON.stringify(bots));
+            localStorage.setItem('activeBotId', activeBotId);
+            localStorage.setItem('lastUpdated', timestamp.toString());
+        } catch (e) {
+            alert("Atenção: A memória do seu navegador está muito cheia! O aplicativo não conseguiu salvar a duplicação ou as imagens. Você atingiu o limite de 5MB do celular.");
+            return;
+        }
 
         // Sync com a nuvem (silencioso no background)
         try {

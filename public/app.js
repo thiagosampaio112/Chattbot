@@ -17,6 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const deleteBotBtn = document.getElementById('delete-bot-btn');
     const duplicateBotBtn = document.getElementById('duplicate-bot-btn');
     const clearChatBtn = document.getElementById('clear-chat-btn');
+    const groupBtn = document.getElementById('group-btn');
+    const groupModal = document.getElementById('group-modal');
+    const groupBotList = document.getElementById('group-bot-list');
+    const saveGroupBtn = document.getElementById('save-group-btn');
+    const closeGroupBtn = document.getElementById('close-group-btn');
     const botNameInput = document.getElementById('bot-name');
     const botPersonalityInput = document.getElementById('bot-personality');
     const botScenarioInput = document.getElementById('bot-scenario');
@@ -46,7 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
             history: [],
             imageMap: {},
             avatar: null,
-            background: null
+            background: null,
+            linkedBots: []
         }
     ];
     let activeBotId = localStorage.getItem('activeBotId') || bots[0].id;
@@ -273,10 +279,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 let activeTag = msg.imageTag || (msg.sender === 'bot' ? lastKnownTag : null);
                 
                 let imgData = null;
-                if (activeTag && bot.imageMap[activeTag]) {
-                    imgData = bot.imageMap[activeTag];
+                let avatarUrl = null;
+                let isGroupChatMsg = !!msg.customName;
+                
+                if (isGroupChatMsg && msg.customName !== bot.name) {
+                    bot.linkedBots = bot.linkedBots || [];
+                    const linked = bot.linkedBots.map(id => bots.find(b => b.id === id)).filter(Boolean);
+                    const linkedBot = linked.find(b => b.name === msg.customName);
+                    
+                    if (linkedBot) {
+                        avatarUrl = linkedBot.avatar;
+                        if (activeTag && activeTag.startsWith(`${msg.customName}_`)) {
+                            let realTag = activeTag.replace(`${msg.customName}_`, '');
+                            if (linkedBot.imageMap[realTag]) imgData = linkedBot.imageMap[realTag];
+                        }
+                    }
+                } else {
+                    if (activeTag && bot.imageMap[activeTag]) {
+                        imgData = bot.imageMap[activeTag];
+                    }
                 }
-                appendMessage(msg.text, msg.sender, imgData, false, msg.imageTag);
+                
+                const displayAvatar = isGroupChatMsg ? (avatarUrl || bot.avatar) : null;
+                const displayName = isGroupChatMsg ? msg.customName : null;
+
+                appendMessage(msg.text, msg.sender, imgData, false, msg.imageTag, displayAvatar, displayName);
             });
         }
     }
@@ -432,7 +459,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 history: [], 
                 imageMap: JSON.parse(JSON.stringify(currentBot.imageMap || {})),
                 avatar: currentBot.avatar,
-                background: currentBot.background
+                background: currentBot.background,
+                linkedBots: []
             };
             bots.push(newBot);
             activeBotId = newBot.id;
@@ -441,6 +469,55 @@ document.addEventListener('DOMContentLoaded', () => {
             loadChat();
             settingsModal.classList.add('hidden');
         }
+    });
+
+    // --- Group Logic ---
+    groupBtn.addEventListener('click', () => {
+        const currentBot = getActiveBot();
+        currentBot.linkedBots = currentBot.linkedBots || [];
+        groupBotList.innerHTML = '';
+        
+        let addedCount = 0;
+        bots.forEach(b => {
+            if (b.id !== currentBot.id) {
+                const label = document.createElement('label');
+                label.style.display = 'block';
+                label.style.marginBottom = '8px';
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.value = b.id;
+                checkbox.checked = currentBot.linkedBots.includes(b.id);
+                checkbox.style.marginRight = '10px';
+                
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(b.name));
+                groupBotList.appendChild(label);
+                addedCount++;
+            }
+        });
+        
+        if (addedCount === 0) {
+            groupBotList.innerHTML = '<p style="color: #888;">Você precisa criar outro personagem primeiro para poder adicioná-lo ao grupo.</p>';
+        }
+        
+        groupModal.classList.remove('hidden');
+    });
+
+    closeGroupBtn.addEventListener('click', () => {
+        groupModal.classList.add('hidden');
+    });
+
+    saveGroupBtn.addEventListener('click', () => {
+        const currentBot = getActiveBot();
+        const checkboxes = groupBotList.querySelectorAll('input[type="checkbox"]');
+        currentBot.linkedBots = [];
+        checkboxes.forEach(cb => {
+            if (cb.checked) currentBot.linkedBots.push(cb.value);
+        });
+        saveState();
+        groupModal.classList.add('hidden');
+        alert("Grupo atualizado! Nas próximas mensagens, a IA poderá responder como esses personagens.");
     });
 
     clearChatBtn.addEventListener('click', () => {
@@ -454,10 +531,37 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Chat Logic ---
-    const appendMessage = (text, sender, imageUrl = null, save = true, imageTag = null) => {
+    const appendMessage = (text, sender, imageUrl = null, save = true, imageTag = null, customAvatar = null, customName = null) => {
         const msgDiv = document.createElement('div');
         msgDiv.classList.add('message', sender);
         
+        // Se for o bot e tivermos um customName/Avatar, adicionamos um cabeçalho no balão
+        if (sender === 'bot' && (customName || customAvatar)) {
+            const header = document.createElement('div');
+            header.style.display = 'flex';
+            header.style.alignItems = 'center';
+            header.style.marginBottom = '5px';
+            header.style.gap = '8px';
+            
+            if (customAvatar) {
+                const img = document.createElement('img');
+                img.src = customAvatar;
+                img.style.width = '24px';
+                img.style.height = '24px';
+                img.style.borderRadius = '50%';
+                img.style.objectFit = 'cover';
+                header.appendChild(img);
+            }
+            if (customName) {
+                const nameSpan = document.createElement('strong');
+                nameSpan.innerText = customName;
+                nameSpan.style.fontSize = '0.85em';
+                nameSpan.style.color = 'var(--accent-color)';
+                header.appendChild(nameSpan);
+            }
+            msgDiv.appendChild(header);
+        }
+
         const textSpan = document.createElement('span');
         textSpan.innerText = text;
         msgDiv.appendChild(textSpan);
@@ -473,7 +577,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (save) {
             const bot = getActiveBot();
-            bot.history.push({ sender, text, imageTag });
+            bot.history.push({ sender, text, imageTag, customName });
             saveState();
         }
     };
@@ -503,7 +607,29 @@ document.addEventListener('DOMContentLoaded', () => {
         appendTypingIndicator();
 
         const bot = getActiveBot();
-        const availableTags = Object.keys(bot.imageMap || {});
+        bot.linkedBots = bot.linkedBots || [];
+        const linked = bot.linkedBots.map(id => bots.find(b => b.id === id)).filter(Boolean);
+        
+        let combinedPersonality = bot.personality;
+        let combinedTags = Object.keys(bot.imageMap || {});
+        let combinedScenario = bot.scenario || '';
+        let isGroupChat = linked.length > 0;
+
+        if (isGroupChat) {
+            combinedPersonality = `ATENÇÃO: Este é um CHAT EM GRUPO. Você atuará como MÚLTIPLOS personagens principais simultaneamente.\n\n` +
+                                  `Personagem 1 (Host): NOME: ${bot.name}\nPERSONALIDADE: ${bot.personality}\n\n`;
+            
+            linked.forEach((lb, i) => {
+                combinedPersonality += `Personagem ${i+2}: NOME: ${lb.name}\nPERSONALIDADE: ${lb.personality}\n\n`;
+                combinedTags = combinedTags.concat(Object.keys(lb.imageMap || {}).map(t => `${lb.name}_${t}`));
+                if (lb.scenario) combinedScenario += `\n[Cenário de ${lb.name}]: ${lb.scenario}`;
+            });
+
+            combinedPersonality += `\n\nREGRAS CRÍTICAS DE RESPOSTA NO GRUPO:
+            1. Você DEVE indicar quem está falando colocando o nome entre colchetes no início da fala. Exemplo: "[${bot.name}] Oi Thiago!" ou "[${linked[0].name}] Olá!".
+            2. Você pode responder com apenas um personagem, ou com vários na mesma mensagem (escrevendo a fala de um, quebrando linha, e escrevendo a fala do outro).
+            3. Se você for enviar uma imagem de um personagem, certifique-se de que a tag corresponda àquele personagem. Para o Host (${bot.name}), use as tags originais [IMAGE: tag]. Para os convidados, o nome foi embutido na tag: [IMAGE: NomedaPessoa_tag].`;
+        }
 
         try {
             const response = await fetch('/api/chat', {
@@ -511,9 +637,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     messages: bot.history.slice(-100).map(h => ({ sender: h.sender, text: h.text })),
-                    personality: bot.personality,
-                    scenario: bot.scenario || '',
-                    availableTags: availableTags
+                    personality: combinedPersonality,
+                    scenario: combinedScenario,
+                    availableTags: combinedTags
                 })
             });
 
@@ -521,24 +647,66 @@ document.addEventListener('DOMContentLoaded', () => {
             removeTypingIndicator();
 
             if (data.error) {
-                // Reverte a mensagem do usuário que causou o erro (para não travar o histórico)
-                const bot = getActiveBot();
                 bot.history.pop();
                 saveState();
-                
-                // Recarrega a tela para apagar o balão do usuário e mostra o erro
                 loadChat();
                 appendMessage("⚠️ Mensagem bloqueada e revertida! Motivo: " + data.error, 'bot', null, false);
             } else {
-                if (data.imageTag) {
-                    bot.lastImageTag = data.imageTag;
-                }
+                if (data.imageTag) bot.lastImageTag = data.imageTag;
                 let activeTag = data.imageTag || bot.lastImageTag;
-                let imgData = null;
-                if (activeTag && bot.imageMap[activeTag]) {
-                    imgData = bot.imageMap[activeTag];
+                
+                let messagesToRender = [];
+                let rawText = data.text;
+                
+                if (isGroupChat) {
+                    // Divide o texto pelo padrão [Nome]
+                    const regex = /\[(.*?)\]\s*(.*?(?=\[|$))/gs;
+                    let match;
+                    let lastIndex = 0;
+                    
+                    while ((match = regex.exec(rawText)) !== null) {
+                        const senderName = match[1];
+                        const msgText = match[2].trim();
+                        if (msgText) {
+                            messagesToRender.push({ name: senderName, text: msgText });
+                        }
+                        lastIndex = regex.lastIndex;
+                    }
+                    // Se a IA esqueceu as tags, joga tudo pro host
+                    if (messagesToRender.length === 0 && rawText.trim()) {
+                        messagesToRender.push({ name: bot.name, text: rawText.trim() });
+                    }
+                } else {
+                    messagesToRender.push({ name: bot.name, text: rawText });
                 }
-                appendMessage(data.text, 'bot', imgData, true, data.imageTag);
+
+                messagesToRender.forEach((msg, index) => {
+                    let avatarUrl = bot.avatar;
+                    let imgData = null;
+                    
+                    if (msg.name !== bot.name) {
+                        const linkedBot = linked.find(b => b.name === msg.name);
+                        if (linkedBot) {
+                            avatarUrl = linkedBot.avatar;
+                            if (activeTag && activeTag.startsWith(`${msg.name}_`)) {
+                                let realTag = activeTag.replace(`${msg.name}_`, '');
+                                if (linkedBot.imageMap[realTag]) imgData = linkedBot.imageMap[realTag];
+                            }
+                        }
+                    } else {
+                        if (activeTag && bot.imageMap[activeTag]) {
+                            imgData = bot.imageMap[activeTag];
+                        }
+                    }
+                    
+                    // Mostramos o nome se for grupo, senão não precisa
+                    const displayName = isGroupChat ? msg.name : null;
+                    const displayAvatar = isGroupChat ? avatarUrl : null;
+                    
+                    // Apenas a última mensagem do bloco leva a imagem (se houver) para não duplicar visualmente
+                    const isLast = (index === messagesToRender.length - 1);
+                    appendMessage(msg.text, 'bot', isLast ? imgData : null, true, isLast ? activeTag : null, displayAvatar, displayName);
+                });
             }
 
         } catch (err) {

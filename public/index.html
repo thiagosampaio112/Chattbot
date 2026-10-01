@@ -24,6 +24,7 @@
             <button id="menu-btn" title="Lista de Personagens">☰</button>
             <div class="avatar" id="header-avatar" style="background-size: cover; background-position: center;">🤖</div>
             <h1 id="bot-name-display">Meu Bot</h1>
+            <button id="group-btn" title="Adicionar Personagens" style="background: none; border: none; font-size: 20px; cursor: pointer; margin-right: 10px;">👥</button>
             <button id="settings-btn" title="Configurar Personagem Atual">⚙️</button>
         </header>
 
@@ -90,6 +91,20 @@
                     <button id="duplicate-bot-btn" class="secondary-btn" style="background-color: #007bff;">Duplicar</button>
                     <button id="save-settings-btn" class="primary-btn">Salvar</button>
                     <button id="close-settings-btn" class="secondary-btn">Cancelar</button>
+                </div>
+            </div>
+        </div>
+        <!-- Group Modal -->
+        <div id="group-modal" class="modal hidden">
+            <div class="modal-content">
+                <h2>Adicionar Colega de Quarto (Multi-Bot)</h2>
+                <p style="color: #ccc; font-size: 13px; margin-bottom: 10px;">Selecione os outros bots que estarão presentes neste chat.</p>
+                <div id="group-bot-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 15px;">
+                    <!-- Checkboxes injetados pelo JS -->
+                </div>
+                <div class="modal-actions">
+                    <button id="save-group-btn" class="primary-btn">Salvar Grupo</button>
+                    <button id="close-group-btn" class="secondary-btn">Cancelar</button>
                 </div>
             </div>
         </div>

@@ -93,9 +93,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cloudTime = parseInt(data.state.lastUpdated) || 0;
                 const localTime = parseInt(localStorage.getItem('lastUpdated')) || 0;
                 
-                // Força o local a ser a única fonte da verdade temporariamente para depuração
-                if (localTime > cloudTime) {
-                    saveState(); // Tenta upar pra nuvem
+                // Se a nuvem for estritamente mais nova, OU se o local estiver vazio (novo aparelho/cache limpo)
+                if (cloudTime > localTime || localTime === 0) {
+                    bots = data.state.bots;
+                    activeBotId = data.state.activeBotId;
+                    localStorage.setItem('bots', JSON.stringify(bots));
+                    localStorage.setItem('activeBotId', activeBotId);
+                    localStorage.setItem('lastUpdated', cloudTime.toString());
+                    renderCharacterList();
+                    loadChat();
+                } else if (localTime > cloudTime) {
+                    // Local é mais recente, re-sincroniza com a nuvem
+                    saveState();
                 }
             }
         } catch(e) {

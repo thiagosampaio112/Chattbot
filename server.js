@@ -128,6 +128,7 @@ Regras:
 
 // Rotas de Banco de Dados em Nuvem (Vercel KV)
 const { kv } = require('@vercel/kv');
+const zlib = require('zlib');
 
 app.get('/api/state', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -138,7 +139,14 @@ app.get('/api/state', async (req, res) => {
         return res.status(400).json({ error: "Banco de dados não configurado" });
     }
     try {
-        const state = await kv.get('chattbot_state');
+        let state = null;
+        const compressed = await kv.get('chattbot_state_v2');
+        if (compressed) {
+            const buffer = Buffer.from(compressed, 'base64');
+            state = JSON.parse(zlib.gunzipSync(buffer).toString());
+        } else {
+            state = await kv.get('chattbot_state');
+        }
         res.json({ state });
     } catch(e) {
         res.status(500).json({ error: "Erro ao ler banco de dados", details: e.message });
@@ -150,7 +158,9 @@ app.post('/api/state', async (req, res) => {
         return res.status(400).json({ error: "Banco de dados não configurado" });
     }
     try {
-        await kv.set('chattbot_state', req.body.state);
+        const jsonString = JSON.stringify(req.body.state);
+        const compressedBase64 = zlib.gzipSync(Buffer.from(jsonString)).toString('base64');
+        await kv.set('chattbot_state_v2', compressedBase64);
         res.json({ success: true });
     } catch(e) {
         res.status(500).json({ error: "Erro ao salvar banco de dados", details: e.message });

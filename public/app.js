@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeSettingsBtn = document.getElementById('close-settings-btn');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
     const deleteBotBtn = document.getElementById('delete-bot-btn');
+    const duplicateBotBtn = document.getElementById('duplicate-bot-btn');
     const clearChatBtn = document.getElementById('clear-chat-btn');
     const botNameInput = document.getElementById('bot-name');
     const botPersonalityInput = document.getElementById('bot-personality');
@@ -307,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         modalTitle.innerText = "Configurar Personagem";
         deleteBotBtn.style.display = bots.length > 1 ? 'block' : 'none';
+        duplicateBotBtn.style.display = 'block';
         clearChatBtn.style.display = 'block';
         
         renderTagsList();
@@ -327,6 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         modalTitle.innerText = "Criar Novo Personagem";
         deleteBotBtn.style.display = 'none';
+        duplicateBotBtn.style.display = 'none';
         clearChatBtn.style.display = 'none';
         
         renderTagsList();
@@ -391,6 +394,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (confirm("Tem certeza que deseja apagar este personagem?")) {
             bots = bots.filter(b => b.id !== activeBotId);
             activeBotId = bots[0].id; 
+            saveState();
+            renderCharacterList();
+            loadChat();
+            settingsModal.classList.add('hidden');
+        }
+    });
+
+    duplicateBotBtn.addEventListener('click', () => {
+        if (confirm("Criar uma cópia deste personagem? (O histórico de conversas não será copiado)")) {
+            const currentBot = getActiveBot();
+            const newBot = {
+                id: 'bot_' + Date.now(),
+                name: currentBot.name + ' (Cópia)',
+                personality: currentBot.personality,
+                scenario: currentBot.scenario,
+                history: [], 
+                imageMap: JSON.parse(JSON.stringify(currentBot.imageMap || {})),
+                avatar: currentBot.avatar,
+                background: currentBot.background
+            };
+            bots.push(newBot);
+            activeBotId = newBot.id;
             saveState();
             renderCharacterList();
             loadChat();

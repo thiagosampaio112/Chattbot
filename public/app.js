@@ -60,16 +60,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Helpers ---
     async function saveState() {
+        const timestamp = Date.now();
         localStorage.setItem('bots', JSON.stringify(bots));
         localStorage.setItem('activeBotId', activeBotId);
+        localStorage.setItem('lastUpdated', timestamp.toString());
 
         // Sync com a nuvem (silencioso no background)
         try {
-            await fetch('/api/state', {
+            const response = await fetch('/api/state', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ state: { bots, activeBotId } })
+                body: JSON.stringify({ state: { bots, activeBotId, lastUpdated: timestamp } })
             });
+            if (!response.ok) {
+                console.warn("Nuvem cheia ou indisponível. Dados salvos apenas localmente.");
+            }
         } catch(e) {
             console.log("Aguardando configuração da nuvem...");
         }
@@ -79,13 +84,22 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const res = await fetch('/api/state', { cache: 'no-store' });
             const data = await res.json();
-            if (data.state) {
-                bots = data.state.bots || bots;
-                activeBotId = data.state.activeBotId || activeBotId;
-                localStorage.setItem('bots', JSON.stringify(bots));
-                localStorage.setItem('activeBotId', activeBotId);
-                renderCharacterList();
-                loadChat();
+            if (data.state && data.state.bots) {
+                const cloudTime = parseInt(data.state.lastUpdated) || 0;
+                const localTime = parseInt(localStorage.getItem('lastUpdated')) || 0;
+                
+                if (cloudTime > localTime) {
+                    bots = data.state.bots;
+                    activeBotId = data.state.activeBotId;
+                    localStorage.setItem('bots', JSON.stringify(bots));
+                    localStorage.setItem('activeBotId', activeBotId);
+                    localStorage.setItem('lastUpdated', cloudTime.toString());
+                    renderCharacterList();
+                    loadChat();
+                } else if (localTime > cloudTime) {
+                    // Local é mais recente, re-sincroniza com a nuvem
+                    saveState();
+                }
             }
         } catch(e) {
             // Nuvem ainda não configurada

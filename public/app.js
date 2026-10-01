@@ -88,7 +88,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const cloudTime = parseInt(data.state.lastUpdated) || 0;
                 const localTime = parseInt(localStorage.getItem('lastUpdated')) || 0;
                 
-                if (cloudTime > localTime) {
+                // Puxa da nuvem se a nuvem for mais nova, ou se ambos não tiverem timestamp (backup legado)
+                if (cloudTime > localTime || (cloudTime === 0 && localTime === 0)) {
                     bots = data.state.bots;
                     activeBotId = data.state.activeBotId;
                     localStorage.setItem('bots', JSON.stringify(bots));

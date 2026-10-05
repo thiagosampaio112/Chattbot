@@ -567,6 +567,52 @@ document.addEventListener('DOMContentLoaded', () => {
         textSpan.innerText = text;
         msgDiv.appendChild(textSpan);
 
+        if (sender === 'bot') {
+            const ttsBtn = document.createElement('button');
+            ttsBtn.innerText = '🔊';
+            ttsBtn.title = "Ouvir Mensagem";
+            ttsBtn.style.background = 'none';
+            ttsBtn.style.border = 'none';
+            ttsBtn.style.cursor = 'pointer';
+            ttsBtn.style.marginLeft = '8px';
+            ttsBtn.style.opacity = '0.7';
+            
+            ttsBtn.addEventListener('click', () => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    
+                    // Limpa formatação Markdown e tags de imagem para não ser lido em voz alta
+                    const cleanSpeech = text.replace(/\[IMAGE:.*?\]/g, '').replace(/[*_~`#]/g, '').trim();
+                    const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+                    
+                    // Se o texto parecer estar em inglês (contém palavras comuns), muda o sotaque para en-US
+                    const isEnglish = /\b(the|and|you|that|is|this|what|how)\b/i.test(cleanSpeech);
+                    utterance.lang = isEnglish ? 'en-US' : 'pt-BR';
+                    
+                    // Tenta selecionar uma voz feminina nativa se possível
+                    const voices = window.speechSynthesis.getVoices();
+                    const femaleVoice = voices.find(v => v.lang.includes(utterance.lang) && (v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Google') || v.name.includes('Maria') || v.name.includes('Luciana')));
+                    if (femaleVoice) {
+                        utterance.voice = femaleVoice;
+                    }
+                    
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    alert('Seu navegador não suporta leitura de tela.');
+                }
+            });
+            
+            // Coloca o botão de som ao lado do texto
+            const flexContainer = document.createElement('div');
+            flexContainer.style.display = 'flex';
+            flexContainer.style.justifyContent = 'space-between';
+            flexContainer.style.alignItems = 'flex-end';
+            
+            msgDiv.replaceChild(flexContainer, textSpan);
+            flexContainer.appendChild(textSpan);
+            flexContainer.appendChild(ttsBtn);
+        }
+
         if (imageUrl) {
             const img = document.createElement('img');
             img.src = imageUrl;

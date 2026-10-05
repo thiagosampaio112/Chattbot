@@ -17,6 +17,31 @@ if (apiKey) {
     genAI = new GoogleGenerativeAI(apiKey);
 }
 
+app.post('/api/clean-text', async (req, res) => {
+    try {
+        const { rawText } = req.body;
+        if (!genAI) return res.status(500).json({ error: "Gemini não configurado." });
+
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        const prompt = `O texto a seguir é uma transcrição de áudio crua. Ele pode conter hesitações (ééé, hum), pausas, repetições e gagueiras. 
+Seu trabalho é limpar o texto, removendo a sujeira e corrigindo a pontuação, tornando a frase natural e fluida.
+CRÍTICO: Você não deve responder à frase, não deve continuar a história, e deve manter exatamente o mesmo idioma, tom e intenção da frase original (se for em inglês, limpe em inglês; se for gíria, mantenha gíria, etc).
+
+TEXTO ORIGINAL: "${rawText}"
+
+Retorne APENAS o texto limpo, sem aspas e sem explicações extras.`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const cleanedText = response.text().trim();
+        
+        res.json({ text: cleanedText });
+    } catch (error) {
+        console.error("Erro ao limpar texto:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 app.post('/api/chat', async (req, res) => {
     try {
         const { messages, personality, scenario, availableTags } = req.body;

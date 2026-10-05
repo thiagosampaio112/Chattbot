@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const messagesContainer = document.getElementById('messages');
     const messageInput = document.getElementById('message-input');
     const sendBtn = document.getElementById('send-btn');
+    const micBtn = document.getElementById('mic-btn');
     
     const menuBtn = document.getElementById('menu-btn');
     const sidebar = document.getElementById('sidebar');
@@ -720,6 +721,72 @@ document.addEventListener('DOMContentLoaded', () => {
     messageInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendMessage();
     });
+
+    // --- Voice Recognition Logic ---
+    let recognition;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR'; // Pode ser alterado dinamicamente para 'en-US' no futuro
+        recognition.interimResults = false;
+        recognition.continuous = false;
+
+        recognition.onstart = () => {
+            micBtn.innerText = '🔴';
+            messageInput.placeholder = 'Ouvindo...';
+        };
+
+        recognition.onresult = async (event) => {
+            const rawTranscript = event.results[0][0].transcript;
+            micBtn.innerText = '⏳';
+            messageInput.placeholder = 'Limpando áudio...';
+            
+            try {
+                const response = await fetch('/api/clean-text', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rawText: rawTranscript })
+                });
+                const data = await response.json();
+                
+                if (data.text) {
+                    messageInput.value = data.text;
+                } else {
+                    messageInput.value = rawTranscript; // Fallback
+                }
+            } catch (e) {
+                console.error("Erro ao limpar texto", e);
+                messageInput.value = rawTranscript; // Fallback
+            }
+            
+            micBtn.innerText = '🎤';
+            messageInput.placeholder = 'Digite sua mensagem...';
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Erro de reconhecimento de voz:", event.error);
+            micBtn.innerText = '🎤';
+            messageInput.placeholder = 'Digite sua mensagem...';
+        };
+
+        recognition.onend = () => {
+            if (micBtn.innerText === '🔴') {
+                micBtn.innerText = '🎤';
+                messageInput.placeholder = 'Digite sua mensagem...';
+            }
+        };
+
+        micBtn.addEventListener('click', () => {
+            if (micBtn.innerText === '🎤') {
+                recognition.start();
+            } else {
+                recognition.stop();
+            }
+        });
+    } else {
+        micBtn.style.display = 'none';
+        console.warn("SpeechRecognition não suportado neste navegador.");
+    }
 
     renderCharacterList();
     loadChat();

@@ -54,7 +54,29 @@
                 <label>Personagens Secundários / Mundo (Opcional):</label>
                 <textarea id="bot-scenario" rows="3" placeholder="Ex: 'Ana é a melhor amiga dela, muito sarcástica e sempre interrompe as conversas.' A IA dará voz a eles."></textarea>
                 
-                <button id="clear-chat-btn" class="secondary-btn" style="width: 100%; margin-top: 5px; background-color: #444;">🧹 Limpar Histórico de Conversa</button>
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <div style="flex: 1;">
+                        <label>Idioma Principal:</label>
+                        <select id="bot-language" style="width: 100%; padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #555;">
+                            <option value="pt-BR">Português</option>
+                            <option value="en-US">Inglês</option>
+                            <option value="es-ES">Espanhol</option>
+                            <option value="fr-FR">Francês</option>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Velocidade da Voz:</label>
+                        <select id="bot-voice-speed" style="width: 100%; padding: 8px; border-radius: 4px; background: #333; color: white; border: 1px solid #555;">
+                            <option value="0.75">Lenta (0.75x)</option>
+                            <option value="1.0" selected>Normal (1x)</option>
+                            <option value="1.25">Rápida (1.25x)</option>
+                            <option value="1.5">Muito Rápida (1.5x)</option>
+                            <option value="2.0">Acelerada (2x)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button id="clear-chat-btn" class="secondary-btn" style="width: 100%; margin-top: 15px; background-color: #444;">🧹 Limpar Histórico de Conversa</button>
                 
                 <hr class="divider">
 

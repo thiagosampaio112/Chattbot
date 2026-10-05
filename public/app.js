@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const botNameInput = document.getElementById('bot-name');
     const botPersonalityInput = document.getElementById('bot-personality');
     const botScenarioInput = document.getElementById('bot-scenario');
+    const botLanguageInput = document.getElementById('bot-language');
+    const botVoiceSpeedInput = document.getElementById('bot-voice-speed');
     const botNameDisplay = document.getElementById('bot-name-display');
     const headerAvatar = document.getElementById('header-avatar');
     const chatContainer = document.getElementById('chat-container');
@@ -347,6 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
         botNameInput.value = bot.name;
         botPersonalityInput.value = bot.personality;
         botScenarioInput.value = bot.scenario || '';
+        botLanguageInput.value = bot.language || 'pt-BR';
+        botVoiceSpeedInput.value = bot.voiceSpeed || '1.0';
         tempImageMap = JSON.parse(JSON.stringify(bot.imageMap || {})); 
         tagRenames = {};
         tempAvatar = bot.avatar || null;
@@ -390,6 +394,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const name = botNameInput.value.trim() || 'Sem Nome';
         const personality = botPersonalityInput.value.trim() || 'Você é um bot.';
         const scenario = botScenarioInput.value.trim() || '';
+        const language = botLanguageInput.value;
+        const voiceSpeed = botVoiceSpeedInput.value;
 
         try {
             if (isCreatingNew) {
@@ -398,10 +404,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     name,
                     personality,
                     scenario,
+                    language,
+                    voiceSpeed,
                     history: [],
                     imageMap: tempImageMap,
                     avatar: tempAvatar,
-                    background: tempBg
+                    background: tempBg,
+                    linkedBots: []
                 };
                 bots.push(newBot);
                 activeBotId = newBot.id;
@@ -410,6 +419,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 bot.name = name;
                 bot.personality = personality;
                 bot.scenario = scenario;
+                bot.language = language;
+                bot.voiceSpeed = voiceSpeed;
                 bot.imageMap = tempImageMap;
                 bot.avatar = tempAvatar;
                 bot.background = tempBg;
@@ -581,19 +592,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 if ('speechSynthesis' in window) {
                     window.speechSynthesis.cancel();
                     
-                    // Limpa formatação Markdown e tags de imagem para não ser lido em voz alta
                     const cleanSpeech = text.replace(/\[IMAGE:.*?\]/g, '').replace(/[*_~`#]/g, '').trim();
                     const utterance = new SpeechSynthesisUtterance(cleanSpeech);
+                    const bot = getActiveBot();
                     
-                    // Se o texto parecer estar em inglês (contém palavras comuns), muda o sotaque para en-US
-                    const isEnglish = /\b(the|and|you|that|is|this|what|how)\b/i.test(cleanSpeech);
-                    utterance.lang = isEnglish ? 'en-US' : 'pt-BR';
+                    utterance.lang = bot.language || 'pt-BR';
+                    utterance.rate = parseFloat(bot.voiceSpeed) || 1.0;
                     
-                    // Tenta selecionar uma voz feminina nativa se possível
                     const voices = window.speechSynthesis.getVoices();
-                    const femaleVoice = voices.find(v => v.lang.includes(utterance.lang) && (v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Google') || v.name.includes('Maria') || v.name.includes('Luciana')));
-                    if (femaleVoice) {
-                        utterance.voice = femaleVoice;
+                    
+                    // Prioriza vozes Premium (Online/Natural/Cloud) que são nativas e gratuitas nos navegadores modernos
+                    let bestVoice = voices.find(v => v.lang.includes(utterance.lang) && (v.name.includes('Online') || v.name.includes('Natural') || v.name.includes('Premium')));
+                    
+                    // Se não achar Premium, tenta achar uma voz feminina básica
+                    if (!bestVoice) {
+                        bestVoice = voices.find(v => v.lang.includes(utterance.lang) && (v.name.includes('Female') || v.name.includes('Zira') || v.name.includes('Maria') || v.name.includes('Francisca')));
+                    }
+                    
+                    // Se não achar, pega a primeira disponível do idioma
+                    if (!bestVoice) {
+                        bestVoice = voices.find(v => v.lang.includes(utterance.lang));
+                    }
+
+                    if (bestVoice) {
+                        utterance.voice = bestVoice;
                     }
                     
                     window.speechSynthesis.speak(utterance);
@@ -824,6 +846,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         micBtn.addEventListener('click', () => {
             if (micBtn.innerText === '🎤') {
+                recognition.lang = getActiveBot().language || 'pt-BR';
                 recognition.start();
             } else {
                 recognition.stop();
